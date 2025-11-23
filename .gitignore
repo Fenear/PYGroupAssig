@@ -45,4 +45,4 @@ notebookexecuted_notebook.ipynb
 
 # Windows
 Thumbs.db# Ignore large model files
-*.pkl
+#*.pkl
