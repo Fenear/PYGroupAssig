@@ -26,6 +26,7 @@ statsmodels
 scikit-optimize
 shap
 joblib
+tqdm
 
 # Utilities
 requests

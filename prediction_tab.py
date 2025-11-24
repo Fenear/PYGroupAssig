@@ -8,9 +8,150 @@ from pathlib import Path
 import sys
 import datetime
 
-st.set_page_config(page_title="Bike Demand — Prediction", layout="wide")
-st.title("🔮 Bike Demand — Prediction")
-st.caption("Single-hour forecast for Registered, Casual, and Total demand.")
+# ========= UI: Page + CSS =========
+st.set_page_config(page_title="Bike Demand Prediction", layout="wide")
+
+# --- Global CSS (no extra libs needed) ---
+st.markdown("""
+<style>
+/* Import a clean, legible font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+html, body, [class*="css"]  {
+  font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+/* Header ribbon */
+.app-header {
+  width: 100%;
+  padding: 18px 22px;
+  border-radius: 16px;
+  background: linear-gradient(90deg, rgba(38,132,255,0.18) 0%, rgba(0,212,170,0.18) 100%);
+  border: 1px solid rgba(120,120,120,0.15);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.06);
+  margin-bottom: 8px;
+}
+.app-header h1 {
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+.app-caption {
+  color: rgba(60,60,67,0.85);
+  margin-top: 4px;
+}
+
+/* Section titles */
+.block-container h2, .block-container h3 {
+  letter-spacing: 0.2px;
+}
+
+/* Inputs + selectboxes + sliders */
+.stSelectbox, .stTextInput, .stNumberInput, .stDateInput, .stSlider {
+  background: transparent !important;
+}
+div[data-baseweb="select"] > div, .stDateInput, .stTextInput > div > div, .stNumberInput > div > div {
+  border-radius: 12px !important;
+  border: 1px solid rgba(120,120,120,0.2) !important;
+  box-shadow: none !important;
+}
+div[data-baseweb="select"] > div:hover,
+.stDateInput:hover, .stTextInput > div > div:hover, .stNumberInput > div > div:hover {
+  border-color: rgba(38,132,255,0.5) !important;
+}
+
+/* Buttons */
+.stButton>button {
+  border-radius: 12px;
+  padding: 0.6rem 1.1rem;
+  border: 1px solid rgba(38,132,255,0.25);
+  background: linear-gradient(180deg, rgba(38,132,255,0.9), rgba(38,132,255,0.75));
+  color: white;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  box-shadow: 0 6px 16px rgba(38,132,255,0.25);
+}
+.stButton>button:hover {
+  filter: brightness(1.02);
+  transform: translateY(-1px);
+  transition: all .15s ease-in-out;
+}
+
+/* Metric cards */
+.stMetric {
+  background: white;
+  border: 1px solid rgba(120,120,120,0.12);
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+}
+[data-testid="stMetricDelta"] {
+  font-weight: 600;
+}
+[data-testid="stMetricValue"] {
+  font-weight: 700 !important;
+}
+
+/* Info/success/warning styling tweaks */
+.stAlert {
+  border-radius: 14px;
+  border: 1px solid rgba(120,120,120,0.15);
+}
+
+/* Expander as a card */
+.streamlit-expanderHeader {
+  font-weight: 600 !important;
+}
+.st-expander {
+  border-radius: 14px !important;
+  border: 1px solid rgba(120,120,120,0.15) !important;
+  background: rgba(245,247,250,0.6) !important;
+}
+
+/* Divider spacing */
+hr {
+  margin: 1.2rem 0 0.6rem 0;
+}
+
+/* Subtle containers for the three input columns */
+.section-card {
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(120,120,120,0.12);
+  background: white;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+  margin-bottom: 12px;
+}
+
+/* Tweak captions / helper text */
+.small-muted {
+  font-size: 0.92rem;
+  color: rgba(60,60,67,0.85);
+}
+
+/* Make sliders text labels a bit bolder */
+.stSlider label, .stSelectbox label, .stDateInput label {
+  font-weight: 600;
+}
+
+/* Improve wide layout readability */
+.block-container {
+  padding-top: 1.2rem;
+  padding-bottom: 3rem;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# --- Header UI ---
+st.markdown(
+    """
+    <div class="app-header">
+      <h1>🚲 Bike Demand Prediction</h1>
+      <div class="app-caption">Single-hour forecast for Registered, Casual, and Total demand.</div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 HERE = Path(__file__).resolve().parent
 if str(HERE) not in sys.path:
@@ -105,8 +246,7 @@ def add_features_patched(df_input: pd.DataFrame) -> pd.DataFrame:
     if _safe("dteday"):
         X["yr"] = pd.to_datetime(X["dteday"]).dt.year - 2011
 
-    # Keep dteday here (preprocessor expects it)
-    return X
+    return X  # Keep dteday present for preprocessor expectations
 
 # ======================
 # Load artifacts + metadata
@@ -159,11 +299,15 @@ def _is_pipeline_model(m):
 # ======================
 col1, col2, col3 = st.columns(3)
 with col1:
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.markdown("**Time & Date**")
     default_date = datetime.date(2012, 11, 1)
     date_input = st.date_input("Target Date", default_date)
     hour_input = st.slider("Hour of Day (0–23)", 0, 23, 17)
+    st.markdown('</div>', unsafe_allow_html=True)
+
 with col2:
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.markdown("**Seasonal & Work**")
     season_map = {1:"Spring",2:"Summer",3:"Fall",4:"Winter"}
     m = date_input.month
@@ -174,7 +318,11 @@ with col2:
                                     format_func=lambda x: "Yes (1)" if x==1 else "No (0)", index=1)
     holiday_input = st.selectbox("Is it a Holiday?", [0,1],
                                  format_func=lambda x: "Yes (1)" if x==1 else "No (0)", index=0)
+    st.caption("Tip: Working days + commute hours often produce bimodal peaks.", help=None)
+    st.markdown('</div>', unsafe_allow_html=True)
+
 with col3:
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.markdown("**Weather**")
     weather_map = {1:"Clear / Few clouds",2:"Mist / Cloudy",3:"Light Rain / Snow"}
     weathersit_input = st.selectbox("Weather Situation", options=list(weather_map.keys()),
@@ -183,6 +331,8 @@ with col3:
     atemp_input = st.slider("Feeling Temp (°C)", 0.0, 50.0, 30.0, 0.1) / 50
     hum_input = st.slider("Humidity (%)", 0.0, 100.0, 50.0, 1.0) / 100
     windspeed_input = st.slider("Windspeed (0–67)", 0.0, 67.0, 13.4, 0.1) / 67
+    st.caption("Rideability improves with clear skies, moderate temps, lower humidity & wind.", help=None)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # Base input row — matches your notebook
 input_row = {
@@ -262,9 +412,12 @@ if st.button("Calculate Prediction", type="primary"):
 
         st.success("Prediction Complete!")
         c1, c2, c3 = st.columns(3)
-        c1.metric("Predicted Registered Users", f"{pred_reg:,.0f}")
-        c2.metric("Predicted Casual Users", f"{pred_cas:,.0f}")
-        c3.metric("TOTAL BIKE PROVISIONING NEED", f"{pred_total:,.0f}")
+        with c1:
+            st.metric("Predicted Registered Users", f"{pred_reg:,.0f}")
+        with c2:
+            st.metric("Predicted Casual Users", f"{pred_cas:,.0f}")
+        with c3:
+            st.metric("TOTAL BIKE PROVISIONING NEED", f"{pred_total:,.0f}")
 
         # ======================
         # 📋 Contextual Recommendation (NEW)
